@@ -1,0 +1,24 @@
+{
+  "name": "CloudBook",
+  "version": "1.0.0",
+  "private": true,
+  "dependencies": {
+    "next": "latest",
+    "react": "^17.0.2",
+    "react-dom": "^17.0.2",
+    "serve": "11.2.0",
+    "date-fns": "^2.19.0",
+    "focus-trap-react": "^8.4.2",
+    "framer-motion": "^3.10.3",
+    "react-focus-trap": "^2.7.1",
+    "react-ui": "^1.0.0-beta.31"
+  },
+  "scripts": {
+    "dev": "next",
+    "build": "next build",
+    "preexport": "npm run build",
+    "export": "next export",
+    "prestart": "npm run export",
+    "start": "serve out"
+  }
+}

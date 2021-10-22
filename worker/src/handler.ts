@@ -19,13 +19,20 @@ const isValidationError = (err: any): err is yup.ValidationError => {
   return err && err.name && err.name === "ValidationError";
 };
 
-const createErrorMessage = (
+const createErrorResponse = (
   message: string,
   status: number,
   additionalInformation?: string
 ) => {
   return new Response(JSON.stringify({ message, additionalInformation }), {
     status,
+    headers: { "Content-Type": "application/json" },
+  });
+};
+
+const createSuccessResponse = (responseData: any) => {
+  return new Response(JSON.stringify(responseData), {
+    status: 200,
     headers: { "Content-Type": "application/json" },
   });
 };
@@ -39,6 +46,14 @@ router.get("/posts", async (request) => {
     limit = parseInt(limitString, 10);
   }
   const offset = offsetString ? 0 : parseInt(limitString as string, 10);
+
+  if ((limit && isNaN(limit)) || isNaN(offset)) {
+    return createErrorResponse(
+      "Bad Request",
+      400,
+      "Invalid query params sent, unable to parse as integers"
+    );
+  }
 
   try {
     const posts: string | null = await posts_kv.get("posts");
@@ -57,9 +72,9 @@ router.get("/posts", async (request) => {
     } else {
       responsePostList = postList.slice(offset);
     }
-    return new Response(JSON.stringify(responsePostList), { status: 200 });
+    return createSuccessResponse(responsePostList);
   } catch {
-    return createErrorMessage(
+    return createErrorResponse(
       "Internal Server Error",
       500,
       "Get call for KV errored out, request limits hit"
@@ -71,7 +86,7 @@ router.post("/posts", async (request) => {
   console.log("hello, world!");
   if (request.json === undefined) {
     console.log("not in here");
-    return createErrorMessage(
+    return createErrorResponse(
       "Invalid Json",
       400,
       "JSON was not sent with the request"
@@ -82,7 +97,7 @@ router.post("/posts", async (request) => {
   try {
     post = await request.json();
   } catch {
-    return createErrorMessage(
+    return createErrorResponse(
       "Invalid Json",
       400,
       "JSON has an invalid structure"
@@ -93,13 +108,13 @@ router.post("/posts", async (request) => {
     console.log("resut is: ", result);
   } catch (err: unknown) {
     if (isValidationError(err)) {
-      return createErrorMessage(
+      return createErrorResponse(
         "Invalid Json",
         400,
         `Schema error: ${err.errors[0]}`
       );
     } else {
-      return createErrorMessage(
+      return createErrorResponse(
         "Invalid Json",
         400,
         "JSON has an invalid structure"
@@ -112,7 +127,7 @@ router.post("/posts", async (request) => {
     await posts_kv.put("posts", posts);
     return new Response("", { status: 201 });
   } catch {
-    return createErrorMessage(
+    return createErrorResponse(
       "Internal Server Error",
       500,
       "Post call for KV errored out, request limits hit"
@@ -121,7 +136,7 @@ router.post("/posts", async (request) => {
 });
 
 router.all("*", () =>
-  createErrorMessage(
+  createErrorResponse(
     "URL Not Found",
     404,
     "Oops! You're looking for something that does not exist!"
