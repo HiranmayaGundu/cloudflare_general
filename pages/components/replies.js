@@ -1,16 +1,16 @@
-import React from 'react';
+import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Stack, Avatar, Text, Input } from 'react-ui';
+import { HStack, VStack, Avatar, Text, Input } from '@chakra-ui/react';
 import VisuallyHidden from '@reach/visually-hidden';
 import { user } from '../data';
-import { useState } from '../state';
+import { useState as useAppState } from '../state';
 import { ago } from '../utils';
 
 export const Replies = ({ post }) => {
-  const { actions, dispatch } = useState();
+  const { actions, dispatch } = useAppState();
   const replies = post.replies || [];
 
-  const [hasFocus, setFocus] = React.useState(false);
+  const [hasFocus, setFocus] = useState(false);
 
   const inputDisabled = isMobile();
 
@@ -28,14 +28,14 @@ export const Replies = ({ post }) => {
       <VisuallyHidden>
         <span>Replies</span>
       </VisuallyHidden>
-      <Stack
+      <VStack
         as="ul"
-        direction="vertical"
-        gap={4}
-        css={{ paddingY: 8, paddingX: 6 }}
+        spacing={4}
+        sx={{ paddingY: 8, paddingX: 6, listStyle: 'none' }}
+        align="stretch"
       >
         {replies.map((reply, index) => (
-          <Stack
+          <HStack
             as={motion.li}
             key={index}
             justify="space-between"
@@ -43,25 +43,25 @@ export const Replies = ({ post }) => {
             initial={{ y: 20 }}
             animate={{ y: 0 }}
           >
-            <Stack align="center" gap={2}>
-              <Stack gap={2} align="center">
-                <Avatar src={reply.author.avatar} size="small" />
+            <HStack align="center" spacing={2}>
+              <HStack spacing={2} align="center">
+                <Avatar src={reply.author.avatar} size="sm" />
                 <Text variant="subtle">{reply.author.name}</Text>
-              </Stack>
+              </HStack>
               <p style={{ paddingLeft: 4 }}>{reply.body}</p>
-            </Stack>
-            <Text variant="subtle" size={3}>
+            </HStack>
+            <Text color="gray.400" size={3}>
               {ago(reply.timestamp)}
             </Text>
-          </Stack>
+          </HStack>
         ))}
 
         <li>
-          <Stack>
-            <Stack
+          <HStack>
+            <HStack
               as="form"
               align="center"
-              gap={2}
+              spacing={2}
               key={replies.length}
               onSubmit={(event) => {
                 event.preventDefault();
@@ -87,12 +87,12 @@ export const Replies = ({ post }) => {
                 }
               }}
             >
-              <Avatar src={user.avatar} size="small" />
+              <Avatar src={user.avatar} size="sm" />
               <AnimatePresence initial={false}>
                 {hasFocus && (
-                  <Stack
+                  <HStack
                     align="center"
-                    gap={2}
+                    spacing={2}
                     as={motion.div}
                     initial={{ width: 0, x: -40 }}
                     animate={{ width: 36, x: 0 }}
@@ -100,26 +100,26 @@ export const Replies = ({ post }) => {
                     transition={{ duration: 0.2 }}
                     style={{ overflow: 'hidden' }}
                   >
-                    <Text variant="subtle">{user.name}</Text>
-                  </Stack>
+                    <Text color="gray.500">{user.name}</Text>
+                  </HStack>
                 )}
               </AnimatePresence>
               <Input
                 name="reply"
                 type="text"
-                variant="subtle"
+                variant="unstyled"
                 placeholder={`Reply to ${post.author.name}`}
                 autoComplete="off"
                 autoFocus={!inputDisabled}
                 disabled={inputDisabled}
-                css={{ paddingX: 0, height: 'Avatar.small' }}
+                sx={{ paddingX: 0, height: '32px' }}
                 onFocus={() => setFocus(true)}
                 onBlur={() => setFocus(false)}
               />
-            </Stack>
-          </Stack>
+            </HStack>
+          </HStack>
         </li>
-      </Stack>
+      </VStack>
     </motion.section>
   );
 };

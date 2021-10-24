@@ -45,8 +45,7 @@ router.get("/posts", async (request) => {
   if (limitString) {
     limit = parseInt(limitString, 10);
   }
-  const offset = offsetString ? 0 : parseInt(limitString as string, 10);
-
+  const offset = offsetString ? parseInt(limitString as string, 10) : 0;
   if ((limit && isNaN(limit)) || isNaN(offset)) {
     return createErrorResponse(
       "Bad Request",

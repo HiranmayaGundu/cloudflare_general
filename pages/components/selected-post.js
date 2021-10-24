@@ -1,10 +1,9 @@
-import React from 'react';
+import { useState } from 'react';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
-
 import { HEADER_HEIGHT } from './header';
 import { Post } from './post';
 import { Replies } from './replies';
-import { useState } from '../state';
+import { useState as useAppState } from '../state';
 
 export const SelectedPost = () => {
   const shouldReduceMotion = useReducedMotion();
@@ -14,7 +13,7 @@ export const SelectedPost = () => {
     state: { posts, newPosts, selectedPostId, isPermalink },
     actions,
     dispatch,
-  } = useState();
+  } = useAppState();
 
   let selectedPost = posts.find((post) => post.id === selectedPostId);
 
@@ -31,7 +30,7 @@ export const SelectedPost = () => {
     initialY = rect.top - HEADER_HEIGHT;
   }
 
-  const [dragOffset, setDragOffset] = React.useState(0);
+  const [dragOffset, setDragOffset] = useState(0);
 
   return (
     <AnimatePresence
@@ -57,10 +56,10 @@ export const SelectedPost = () => {
             drag="y"
             dragConstraints={{ top: 0, bottom: 0 }}
             dragMomentum={false}
-            onDrag={(event, info) => {
+            onDrag={(_, info) => {
               setDragOffset(info.offset.y);
             }}
-            onDragEnd={(event, info) => {
+            onDragEnd={(_, info) => {
               setDragOffset(0);
               if (info.offset.y > 100 || info.offset.y < -100) {
                 dispatch({ type: actions.DESELECT_POST });

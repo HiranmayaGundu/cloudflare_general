@@ -1,5 +1,5 @@
-import React from 'react';
-import { Stack, Button } from 'react-ui';
+import { useRef, useEffect } from 'react';
+import { VStack, Button } from '@chakra-ui/react';
 import { motion } from 'framer-motion';
 
 import { Header } from './header';
@@ -14,8 +14,8 @@ export const Feed = () => {
     actions,
   } = useState();
 
-  const mainRef = React.useRef(null);
-  React.useEffect(
+  const mainRef = useRef(null);
+  useEffect(
     function scrollBack() {
       if (mainRef.current && !selectedPostId) {
         mainRef.current.scrollTo({ top: history.state?.scrollPosition });
@@ -25,7 +25,7 @@ export const Feed = () => {
   );
 
   return (
-    <Stack direction="vertical" css={{ height: '100vh', overflow: 'hidden' }}>
+    <VStack sx={{ height: '100vh', overflow: 'hidden' }}>
       <Header
         isHome={true}
         scrollTop={() => {
@@ -40,6 +40,7 @@ export const Feed = () => {
           overflow: 'auto',
           paddingBottom: 100,
           position: 'relative',
+          width: '100%'
         }}
       >
         {hasNewPosts && (
@@ -47,25 +48,26 @@ export const Feed = () => {
             as={motion.button}
             initial={{ height: 0 }}
             animate={{ height: 'auto' }}
+            size="sm"
             variant="link"
-            fullWidth
+            colorScheme="teal"
+            isFullWidth
             onClick={() => dispatch({ type: actions.SHOW_NEW_POSTS })}
             style={{ backgroundColor: 'blues.100', paddingY: 5 }}
           >
             load more posts
           </Button>
         )}
-        <Stack
+        <VStack
           as="ul"
-          direction="vertical"
-          css={{ maxWidth: 600, marginX: 'auto' }}
+          sx={{ maxWidth: 600, marginX: 'auto', listStyleType: 'none' }}
         >
           {posts.map((post) => (
             <motion.li
               layout
               key={post.id}
               data-id={post.id}
-              style={{ opacity: post.id === selectedPostId ? 0 : 1 }}
+              style={{ opacity: post.id === selectedPostId ? 0 : 1, width: '100%' }}
             >
               <Post
                 post={post}
@@ -79,9 +81,9 @@ export const Feed = () => {
               />
             </motion.li>
           ))}
-        </Stack>
+        </VStack>
         <SelectedPost />
       </main>
-    </Stack>
+    </VStack>
   );
 };

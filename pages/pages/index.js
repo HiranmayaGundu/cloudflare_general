@@ -1,4 +1,3 @@
-import React from 'react';
 import { App } from '../components/app';
 import { Feed } from '../components/feed';
 
