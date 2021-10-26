@@ -79,7 +79,7 @@ export const Post = ({ post, onSelect, isPermalink = false }) => {
               </AnimatePresence>
             </HStack>
             
-            <Box as="div" style={post.style || { whiteSpace: 'pre-line' }}>{post.body}</Box>
+            <Box as="div" style={post.style || { whiteSpace: 'pre-line' }}>{post.content}</Box>
             {post.embed && (
               <div>
                 {post.embed.type === 'image' && (
@@ -93,7 +93,7 @@ export const Post = ({ post, onSelect, isPermalink = false }) => {
                     borderRadius="sm"
                   />
                 )}
-                {post.embed.type === 'github' && (
+                {post.embed.type === 'link' && (
                   <HStack
                     as="a"
                     href={post.embed.link.href}

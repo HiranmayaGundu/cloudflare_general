@@ -88,7 +88,7 @@ guys on twitter with great             highly experienced
     timestamp: 'Mar 20, 2021 02:00 PM',
     body: `Here's the repo for this example app`,
     embed: {
-      type: 'github',
+      type: 'link',
       title: 'saturday.vercel.com',
       image: 'https://image.flaticon.com/icons/png/512/25/25231.png',
       link: {
@@ -108,7 +108,7 @@ guys on twitter with great             highly experienced
     timestamp: 'Mar 20, 2021 02:00 PM',
     body: `I'm making a course on this topic :)`,
     embed: {
-      type: 'github',
+      type: 'link',
       title: 'Build truly Interactive React applications',
       image: 'https://interactive-react.com/favicon.png',
       link: {
