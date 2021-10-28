@@ -1,19 +1,27 @@
-import { Fragment, useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { produce } from 'immer';
-import { HStack, VStack, Avatar, Text, Input } from '@chakra-ui/react';
-import VisuallyHidden from '@reach/visually-hidden';
-import { user } from '../data';
-import { useState as useAppState } from '../state';
-import { ago } from '../utils/utils';
-import { useSWRConfig } from 'swr';
-import { API_URL, POSTS_KEY, usePosts } from '../utils/data-fetching';
+import { Fragment, useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { produce } from "immer";
+import {
+  HStack,
+  VStack,
+  Avatar,
+  Text,
+  Input,
+  VisuallyHidden,
+} from "@chakra-ui/react";
+import { useState as useAppState } from "../state";
+import { ago } from "../utils/utils";
+import { useSWRConfig } from "swr";
+import { API_URL, POSTS_KEY, usePosts } from "../utils/data-fetching";
 
 export const Replies = () => {
-  const { state: { selectedPostId }, actions, dispatch } = useAppState();
+  const {
+    state: { selectedPostId, user },
+    actions,
+    dispatch,
+  } = useAppState();
   const { posts } = usePosts();
-  console.log("Potsts after mutation", posts);
-  const post = posts.find(p => p.id === selectedPostId);
+  const post = posts.find((p) => p.id === selectedPostId);
   const replies = post?.replies || [];
 
   const [hasFocus, setFocus] = useState(false);
@@ -23,19 +31,19 @@ export const Replies = () => {
   const { mutate } = useSWRConfig();
 
   if (!selectedPostId) {
-    return <Fragment />
+    return <Fragment />;
   }
 
   return (
     <motion.section
       initial={{ height: 0, y: -40 }}
       animate={{
-        height: 'auto',
+        height: "auto",
         y: 0,
         transition: { delay: 0.5, duration: 0.2 },
       }}
       exit={{ height: 0, transition: { duration: 0.2 } }}
-      style={{ overflow: 'hidden' }}
+      style={{ overflow: "hidden" }}
     >
       <VisuallyHidden>
         <span>Replies</span>
@@ -43,7 +51,7 @@ export const Replies = () => {
       <VStack
         as="ul"
         spacing={4}
-        sx={{ paddingY: 8, paddingX: 6, listStyle: 'none' }}
+        sx={{ paddingY: 8, paddingX: 6, listStyle: "none" }}
         align="stretch"
       >
         {replies.map((reply, index) => (
@@ -83,32 +91,40 @@ export const Replies = () => {
                   author: {
                     username: user.username,
                     avatar: user.avatar,
-                    name: user.name
+                    name: user.name,
                   },
                   content,
-                  timestamp: new Date()
+                  timestamp: new Date(),
                 };
 
-                mutate(POSTS_KEY, produce((posts => {
-                  posts.find(p => p.id === selectedPostId).replies.push(data)
-                })), false);
+                mutate(
+                  POSTS_KEY,
+                  produce((posts) => {
+                    posts
+                      .find((p) => p.id === selectedPostId)
+                      .replies.push(data);
+                  }),
+                  false
+                );
 
-                await mutate(POSTS_KEY, async posts => {
+                await mutate(POSTS_KEY, async (posts) => {
                   try {
+                    const result = await fetch(
+                      `${API_URL}posts/${selectedPostId}/replies`,
+                      {
+                        method: "POST",
+                        body: JSON.stringify(data),
+                      }
+                    );
 
-                    const result = await fetch(`${API_URL}posts/${selectedPostId}/replies`, {
-                      method: 'POST',
-                      body: JSON.stringify(data)
-                    })
+                    const updatedPost = JSON.parse(await result.json());
 
-                    const updatedPost = JSON.parse((await result.json()));
-
-                    console.log(updatedPost);
-
-                    const filterdPosts = produce(posts, draft => {
-                      const index = draft.findIndex(p => p.id === selectedPostId);
+                    const filterdPosts = produce(posts, (draft) => {
+                      const index = draft.findIndex(
+                        (p) => p.id === selectedPostId
+                      );
                       if (index !== -1) {
-                        draft[index] = updatedPost
+                        draft[index] = updatedPost;
                       }
                     });
 
@@ -126,7 +142,7 @@ export const Replies = () => {
                     type: actions.ADD_COMMENT,
                     payload: {
                       postId: post.id,
-                      reply: 'Haha! Cool stuff!',
+                      reply: "Haha! Cool stuff!",
                     },
                   });
                 }
@@ -143,7 +159,7 @@ export const Replies = () => {
                     animate={{ width: 36, x: 0 }}
                     exit={{ width: 0, x: -40 }}
                     transition={{ duration: 0.2 }}
-                    style={{ overflow: 'hidden' }}
+                    style={{ overflow: "hidden" }}
                   >
                     <Text color="gray.500">{user.name}</Text>
                   </HStack>
@@ -157,7 +173,7 @@ export const Replies = () => {
                 autoComplete="off"
                 autoFocus={!inputDisabled}
                 disabled={inputDisabled}
-                sx={{ paddingX: 0, height: '32px' }}
+                sx={{ paddingX: 0, height: "32px" }}
                 onFocus={() => setFocus(true)}
                 onBlur={() => setFocus(false)}
               />

@@ -1,14 +1,14 @@
-import React from 'react';
-import { newPosts } from './data';
+import React from "react";
+import { newPosts } from "./data";
 
 export const StateContext = React.createContext();
 
 export const actions = {
-  SELECT_POST: 'SELECT_POST',
-  DESELECT_POST: 'DESELECT_POST',
-  ADD_COMMENT: 'ADD_COMMENT',
-  LOAD_NEW_POSTS: 'LOAD_NEW_POSTS',
-  SHOW_NEW_POSTS: 'SHOW_NEW_POSTS',
+  SELECT_POST: "SELECT_POST",
+  DESELECT_POST: "DESELECT_POST",
+  ADD_COMMENT: "ADD_COMMENT",
+  LOAD_NEW_POSTS: "LOAD_NEW_POSTS",
+  SHOW_NEW_POSTS: "SHOW_NEW_POSTS",
 };
 
 export const reducer = (state, action) => {

@@ -1,13 +1,13 @@
-import { useRef, useEffect } from 'react';
-import { VStack, Button } from '@chakra-ui/react';
-import { motion } from 'framer-motion';
+import { useRef, useEffect } from "react";
+import { VStack, Button } from "@chakra-ui/react";
+import { motion } from "framer-motion";
 
-import { Header } from './header';
-import { Post } from './post';
-import { SelectedPost } from './selected-post';
-import { useState } from '../state';
-import { usePosts } from '../utils/data-fetching';
-import { PostForm } from '../components/post-form';
+import { Header } from "./header";
+import { Post } from "./post";
+import { SelectedPost } from "./selected-post";
+import { useState } from "../state";
+import { usePosts } from "../utils/data-fetching";
+import { PostForm } from "../components/post-form";
 
 export const Feed = () => {
   const {
@@ -30,11 +30,11 @@ export const Feed = () => {
   );
 
   return (
-    <VStack sx={{ height: '100vh', overflow: 'hidden' }}>
+    <VStack sx={{ height: "100vh", overflow: "hidden" }}>
       <Header
         isHome={true}
         scrollTop={() => {
-          mainRef.current.scrollTo({ top: 0, left: 0, behavior: 'smooth' });
+          mainRef.current.scrollTo({ top: 0, left: 0, behavior: "smooth" });
         }}
       />
 
@@ -42,30 +42,30 @@ export const Feed = () => {
         ref={mainRef}
         style={{
           flexGrow: 1,
-          overflow: 'auto',
+          overflow: "auto",
           paddingBottom: 100,
-          position: 'relative',
-          width: '100%'
+          position: "relative",
+          width: "100%",
         }}
       >
         {hasNewPosts && (
           <Button
             as={motion.button}
             initial={{ height: 0 }}
-            animate={{ height: 'auto' }}
+            animate={{ height: "auto" }}
             size="sm"
             variant="link"
             colorScheme="teal"
             isFullWidth
             onClick={() => dispatch({ type: actions.SHOW_NEW_POSTS })}
-            style={{ backgroundColor: 'blues.100', paddingY: 5 }}
+            style={{ backgroundColor: "blues.100", paddingY: 5 }}
           >
             load more posts
           </Button>
         )}
         <VStack
           as="ul"
-          sx={{ maxWidth: 600, marginX: 'auto', listStyleType: 'none' }}
+          sx={{ maxWidth: 600, marginX: "auto", listStyleType: "none" }}
         >
           <PostForm />
           {posts.map((post) => (
@@ -73,7 +73,10 @@ export const Feed = () => {
               layout
               key={post.id}
               data-id={post.id}
-              style={{ opacity: post.id === selectedPostId ? 0 : 1, width: '100%' }}
+              style={{
+                opacity: post.id === selectedPostId ? 0 : 1,
+                width: "100%",
+              }}
             >
               <Post
                 post={post}
@@ -81,7 +84,7 @@ export const Feed = () => {
                   history.pushState(
                     { scrollPosition: mainRef.current.scrollTop },
                     null,
-                    '/post/' + post.id
+                    "/post/" + post.id
                   );
                 }}
               />

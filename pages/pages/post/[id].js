@@ -1,5 +1,5 @@
-import { App } from '../../components/app';
-import { Feed } from '../../components/feed';
+import { App } from "../../components/app";
+import { Feed } from "../../components/feed";
 
 export async function getServerSideProps(context) {
   return { props: { initialPostId: context.query.id } };

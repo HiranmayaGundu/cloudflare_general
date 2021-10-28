@@ -1,7 +1,6 @@
 import { Router } from "itty-router";
 import * as yup from "yup";
 import { Temporal } from "@js-temporal/polyfill";
-import { v4 as uuidv4 } from "uuid";
 // import extension of date
 import "./extensions";
 
@@ -232,16 +231,16 @@ router.post("/posts", async (request) => {
   try {
     // set the timestamp of the post to now
     post.timestamp = Temporal.Now.instant().toString();
-    post.id = uuidv4();
+    post.id = crypto.randomUUID();
     // replies are empty on first post
     post.replies = [];
 
     const stringPosts: string | null = await posts_kv.get("posts");
     const posts: any[] = stringPosts ? JSON.parse(stringPosts) : [];
 
-    posts.push(post);
+    posts.unshift(post);
     await posts_kv.put("posts", JSON.stringify(posts));
-    return createSuccessResponse(JSON.stringify(posts), 201);
+    return createSuccessResponse(JSON.stringify(post), 201);
   } catch (err) {
     console.log(err)
     return createErrorResponse(
@@ -307,7 +306,7 @@ router.post("/posts/:id/replies", async (request) => {
   try {
     // set the timestamp of the post to now
     reply.timestamp = Temporal.Now.instant().toString();
-    reply.id = uuidv4();
+    reply.id = crypto.randomUUID();
     // replies are empty on first post
 
 

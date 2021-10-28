@@ -1,13 +1,13 @@
-import { useState } from 'react';
-import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
-import { HEADER_HEIGHT } from './header';
-import { Post } from './post';
-import { Replies } from './replies';
-import { useState as useAppState } from '../state';
-import { usePosts } from '../utils/data-fetching';
+import { useState } from "react";
+import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
+import { HEADER_HEIGHT } from "./header";
+import { Post } from "./post";
+import { Replies } from "./replies";
+import { useState as useAppState } from "../state";
+import { usePosts } from "../utils/data-fetching";
 
 export const SelectedPost = () => {
-  if (typeof document === 'undefined') return null;
+  if (typeof document === "undefined") return null;
 
   const {
     state: { newPosts, selectedPostId, isPermalink },
@@ -37,30 +37,27 @@ export const SelectedPost = () => {
     initialY = rect.top - HEADER_HEIGHT;
   }
 
-
-
-
   return (
     <AnimatePresence
       initial={isPermalink ? false : true}
-      onExitComplete={() => history.pushState(null, null, '/')}
+      onExitComplete={() => history.pushState(null, null, "/")}
     >
       {selectedPostId && (
         <section
           style={{
-            position: 'fixed',
+            position: "fixed",
             top: HEADER_HEIGHT,
             height: `calc(100% - ${HEADER_HEIGHT}px)`,
-            width: '100%',
-            display: 'flex',
-            justifyContent: 'center',
+            width: "100%",
+            display: "flex",
+            justifyContent: "center",
           }}
         >
           <motion.article
             initial={{ y: initialY }}
             animate={{ y: 0, transition: { duration: 0.3, delay: 0.1 } }}
             exit={{ y: initialY, transition: { duration: 0.2 } }}
-            style={{ zIndex: 2, width: '100%', maxWidth: 600 }}
+            style={{ zIndex: 2, width: "100%", maxWidth: 600 }}
             drag="y"
             dragConstraints={{ top: 0, bottom: 0 }}
             dragMomentum={false}
@@ -89,12 +86,12 @@ export const SelectedPost = () => {
               transition: { delay: 0.15, duration: 0.1 },
             }}
             style={{
-              position: 'absolute',
+              position: "absolute",
               top: 0,
               bottom: 0,
               left: 0,
               right: 0,
-              background: 'white',
+              background: "white",
               zIndex: 1,
             }}
           ></motion.div>

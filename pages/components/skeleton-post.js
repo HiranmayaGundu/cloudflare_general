@@ -1,5 +1,13 @@
-import { Skeleton, SkeletonCircle, SkeletonText, Box, VStack, HStack, Text } from "@chakra-ui/react";
-import { ReplyIcon } from './reply-icon';
+import {
+  Skeleton,
+  SkeletonCircle,
+  SkeletonText,
+  Box,
+  VStack,
+  HStack,
+  Text,
+} from "@chakra-ui/react";
+import { ReplyIcon } from "./reply-icon";
 
 export const SkeletonPost = () => (
   <Box as="div">
@@ -9,28 +17,29 @@ export const SkeletonPost = () => (
         paddingX: 6,
         paddingTop: 6,
         paddingBottom: 4,
-        borderBottom: '1px solid',
-        borderColor: 'gray.300',
-        backgroundColoe: 'white',
-        ':hover': {
-          cursor: 'pointer',
-          backgroundColor: 'gray.200',
+        borderBottom: "1px solid",
+        borderColor: "gray.300",
+        backgroundColoe: "white",
+        ":hover": {
+          cursor: "pointer",
+          backgroundColor: "gray.200",
         },
-        '&:first-child': {
+        "&:first-child": {
           borderTopRadius: 2,
         },
       }}
       align="stretch"
     >
-      <HStack justify="space-between" sx={{ width: '100%' }}>
+      <HStack justify="space-between" sx={{ width: "100%" }}>
         <HStack spacing={2} align="center">
           <SkeletonCircle size="10" />
-          <span><SkeletonText /></span>
+          <span>
+            <SkeletonText />
+          </span>
         </HStack>
-
       </HStack>
 
-      <Box as="div" style={{ whiteSpace: 'pre-line' }}>
+      <Box as="div" style={{ whiteSpace: "pre-line" }}>
         <SkeletonText mt="4" noOfLines={4} spacing="4" />
       </Box>
 
@@ -48,4 +57,4 @@ export const SkeletonPost = () => (
       </HStack>
     </VStack>
   </Box>
-)
+);

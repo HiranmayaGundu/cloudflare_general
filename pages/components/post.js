@@ -1,11 +1,18 @@
-import { useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion'
-import { VStack, HStack, Avatar, Image, Text, Button, Box } from '@chakra-ui/react'
-import { useState } from '../state.js';
+import { useEffect } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import {
+  VStack,
+  HStack,
+  Avatar,
+  Image,
+  Text,
+  Button,
+  Box,
+} from "@chakra-ui/react";
+import { useState } from "../state.js";
 import { ago } from "../utils/utils.js";
-import { ReplyIcon } from './reply-icon';
-import { CloseIcon } from './close-icon';
-
+import { ReplyIcon } from "./reply-icon";
+import { CloseIcon } from "./close-icon";
 
 export const Post = ({ post, onSelect, isPermalink = false }) => {
   const {
@@ -15,22 +22,22 @@ export const Post = ({ post, onSelect, isPermalink = false }) => {
   } = useState();
 
   const rootProps = isPermalink
-    ? { as: 'div' }
+    ? { as: "div" }
     : {
-      as: 'a',
-      href: '#',
-      onClick: () => {
-        onSelect();
-        dispatch({ type: actions.SELECT_POST, payload: { id: post.id } });
-      },
-    };
+        as: "a",
+        href: "#",
+        onClick: () => {
+          onSelect();
+          dispatch({ type: actions.SELECT_POST, payload: { id: post.id } });
+        },
+      };
 
   useEffect(() => {
     const handler = (event) => {
       if (event.which === 27) dispatch({ type: actions.DESELECT_POST });
     };
-    window.addEventListener('keydown', handler);
-    return () => window.removeEventListener('keydown', handler);
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
   });
   return (
     <Box {...rootProps}>
@@ -40,20 +47,20 @@ export const Post = ({ post, onSelect, isPermalink = false }) => {
           paddingX: 6,
           paddingTop: 6,
           paddingBottom: 4,
-          borderBottom: '1px solid',
-          borderColor: 'gray.300',
-          backgroundColoe: 'white',
-          ':hover': {
-            cursor: isPermalink ? 'default' : 'pointer',
-            backgroundColor: isPermalink ? 'white' : 'gray.200',
+          borderBottom: "1px solid",
+          borderColor: "gray.300",
+          backgroundColoe: "white",
+          ":hover": {
+            cursor: isPermalink ? "default" : "pointer",
+            backgroundColor: isPermalink ? "white" : "gray.200",
           },
-          '&:first-child': {
+          "&:first-child": {
             borderTopRadius: 2,
           },
         }}
         align="stretch"
       >
-        <HStack justify="space-between" sx={{ width: '100%' }}>
+        <HStack justify="space-between" sx={{ width: "100%" }}>
           <HStack spacing={2} align="center">
             <Avatar src={post.author.avatar} size="sm" />
             <span>{post.author.name}</span>
@@ -81,32 +88,34 @@ export const Post = ({ post, onSelect, isPermalink = false }) => {
           </AnimatePresence>
         </HStack>
 
-        <Box as="div" style={post.style || { whiteSpace: 'pre-line' }}>{post.content}</Box>
+        <Box as="div" style={post.style || { whiteSpace: "pre-line" }}>
+          {post.content}
+        </Box>
         {post.embed && (
           <div>
-            {post.embed.type === 'image' && (
+            {post.embed.type === "image" && (
               <Image
                 src={post.embed.image}
                 sx={{
-                  maxHeight: '40vh',
-                  width: '100%'
+                  maxHeight: "40vh",
+                  width: "100%",
                 }}
                 objectFit="cover"
                 borderRadius="sm"
               />
             )}
-            {post.embed.type === 'link' && (
+            {post.embed.type === "link" && (
               <HStack
                 as="a"
                 href={post.embed.link.href}
                 target="_blank"
                 sx={{
                   padding: 3,
-                  border: '1px solid',
+                  border: "1px solid",
                   borderRadius: 2,
                   marginTop: 4,
-                  ':hover, :focus': {
-                    backgroundColor: 'white',
+                  ":hover, :focus": {
+                    backgroundColor: "white",
                   },
                   borderColor: "gray.300",
                 }}
@@ -135,4 +144,4 @@ export const Post = ({ post, onSelect, isPermalink = false }) => {
       </VStack>
     </Box>
   );
-}
+};

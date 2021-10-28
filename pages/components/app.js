@@ -1,6 +1,6 @@
-import { useReducer } from 'react';
-import { StateContext, reducer, actions } from '../state';
-import { user, newPosts } from '../data';
+import { useReducer } from "react";
+import { StateContext, reducer, actions } from "../state";
+import { user, newPosts } from "../data";
 
 export const App = ({ initialPostId = null, children }) => {
   const initialState = {

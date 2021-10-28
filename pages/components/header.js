@@ -1,6 +1,6 @@
-import { useState} from 'react';
-import { HStack, Image, Box, Text } from '@chakra-ui/react';
-import { useState as useAppState } from '../state';
+import { useState } from "react";
+import { HStack, Image, Box, Text } from "@chakra-ui/react";
+import { useState as useAppState } from "../state";
 
 export const HEADER_HEIGHT = 68;
 
@@ -14,11 +14,11 @@ export const Header = ({ isHome = false, scrollTop }) => {
       as="header"
       sx={{
         height: HEADER_HEIGHT,
-        background: 'white',
+        background: "white",
         paddingY: 5,
-        borderBottom: '1px solid',
+        borderBottom: "1px solid",
         zIndex: 2,
-        borderColor: "gray.300"
+        borderColor: "gray.300",
       }}
       width="100%"
     >
@@ -28,10 +28,10 @@ export const Header = ({ isHome = false, scrollTop }) => {
         href="#"
         sx={{
           opacity: 0.5,
-          cursor: 'pointer',
-          ':hover, :focus': !isHome && {
+          cursor: "pointer",
+          ":hover, :focus": !isHome && {
             opacity: 1,
-            transform: 'scale(1.05)',
+            transform: "scale(1.05)",
           },
         }}
         onClick={() => {
@@ -46,12 +46,12 @@ export const Header = ({ isHome = false, scrollTop }) => {
         onContextMenu={(event) => {
           // lol secret trick to reveal url
           event.preventDefault();
-          setShowURL(c => !c);
+          setShowURL((c) => !c);
         }}
       >
         <Image width="200px" src="/logo.png" />
         {showURL && (
-          <Text size={6} sx={{ fontStyle: 'italic', lineHeight: 2 }}>
+          <Text size={6} sx={{ fontStyle: "italic", lineHeight: 2 }}>
             vercel.app
           </Text>
         )}
