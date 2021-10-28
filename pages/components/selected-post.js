@@ -4,18 +4,25 @@ import { HEADER_HEIGHT } from './header';
 import { Post } from './post';
 import { Replies } from './replies';
 import { useState as useAppState } from '../state';
+import { usePosts } from '../utils/data-fetching';
 
 export const SelectedPost = () => {
-  const shouldReduceMotion = useReducedMotion();
   if (typeof document === 'undefined') return null;
 
   const {
-    state: { posts, newPosts, selectedPostId, isPermalink },
+    state: { newPosts, selectedPostId, isPermalink },
     actions,
     dispatch,
   } = useAppState();
 
-  let selectedPost = posts.find((post) => post.id === selectedPostId);
+  const { posts } = usePosts();
+  const [dragOffset, setDragOffset] = useState(0);
+
+  let selectedPost = null;
+
+  if (selectedPostId) {
+    selectedPost = posts.find((post) => post.id === selectedPostId);
+  }
 
   // hack for post page: new posts are inserted later :)
   if (!selectedPost) {
@@ -30,7 +37,8 @@ export const SelectedPost = () => {
     initialY = rect.top - HEADER_HEIGHT;
   }
 
-  const [dragOffset, setDragOffset] = useState(0);
+
+
 
   return (
     <AnimatePresence
@@ -67,7 +75,7 @@ export const SelectedPost = () => {
             }}
           >
             <Post post={selectedPost} isPermalink />
-            <Replies post={selectedPost} />
+            <Replies />
           </motion.article>
 
           <motion.div

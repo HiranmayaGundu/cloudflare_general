@@ -7,10 +7,13 @@
     "@reach/visually-hidden": "^0.16.0",
     "date-fns": "^2.25.0",
     "framer-motion": "^4.1.17",
+    "immer": "^9.0.6",
+    "lodash": "^4.17.21",
     "next": "latest",
     "react": "^17.0.2",
     "react-dom": "^17.0.2",
-    "serve": "11.2.0"
+    "serve": "11.2.0",
+    "swr": "^1.0.1"
   },
   "scripts": {
     "dev": "next",

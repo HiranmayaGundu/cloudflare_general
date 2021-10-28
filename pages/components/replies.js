@@ -1,18 +1,30 @@
-import { useState } from 'react';
+import { Fragment, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { produce } from 'immer';
 import { HStack, VStack, Avatar, Text, Input } from '@chakra-ui/react';
 import VisuallyHidden from '@reach/visually-hidden';
 import { user } from '../data';
 import { useState as useAppState } from '../state';
-import { ago } from '../utils';
+import { ago } from '../utils/utils';
+import { useSWRConfig } from 'swr';
+import { API_URL, POSTS_KEY, usePosts } from '../utils/data-fetching';
 
-export const Replies = ({ post }) => {
-  const { actions, dispatch } = useAppState();
-  const replies = post.replies || [];
+export const Replies = () => {
+  const { state: { selectedPostId }, actions, dispatch } = useAppState();
+  const { posts } = usePosts();
+  console.log("Potsts after mutation", posts);
+  const post = posts.find(p => p.id === selectedPostId);
+  const replies = post?.replies || [];
 
   const [hasFocus, setFocus] = useState(false);
 
   const inputDisabled = isMobile();
+
+  const { mutate } = useSWRConfig();
+
+  if (!selectedPostId) {
+    return <Fragment />
+  }
 
   return (
     <motion.section
@@ -48,7 +60,7 @@ export const Replies = ({ post }) => {
                 <Avatar src={reply.author.avatar} size="sm" />
                 <Text variant="subtle">{reply.author.name}</Text>
               </HStack>
-              <p style={{ paddingLeft: 4 }}>{reply.body}</p>
+              <p style={{ paddingLeft: 4 }}>{reply.content}</p>
             </HStack>
             <Text color="gray.400" size={3}>
               {ago(reply.timestamp)}
@@ -63,14 +75,47 @@ export const Replies = ({ post }) => {
               align="center"
               spacing={2}
               key={replies.length}
-              onSubmit={(event) => {
+              onSubmit={async (event) => {
                 event.preventDefault();
-                dispatch({
-                  type: actions.ADD_COMMENT,
-                  payload: {
-                    postId: post.id,
-                    reply: event.target.reply.value,
+
+                const content = event.target.reply.value;
+                const data = {
+                  author: {
+                    username: user.username,
+                    avatar: user.avatar,
+                    name: user.name
                   },
+                  content,
+                  timestamp: new Date()
+                };
+
+                mutate(POSTS_KEY, produce((posts => {
+                  posts.find(p => p.id === selectedPostId).replies.push(data)
+                })), false);
+
+                await mutate(POSTS_KEY, async posts => {
+                  try {
+
+                    const result = await fetch(`${API_URL}posts/${selectedPostId}/replies`, {
+                      method: 'POST',
+                      body: JSON.stringify(data)
+                    })
+
+                    const updatedPost = JSON.parse((await result.json()));
+
+                    console.log(updatedPost);
+
+                    const filterdPosts = produce(posts, draft => {
+                      const index = draft.findIndex(p => p.id === selectedPostId);
+                      if (index !== -1) {
+                        draft[index] = updatedPost
+                      }
+                    });
+
+                    return filterdPosts;
+                  } catch (err) {
+                    throw err;
+                  }
                 });
               }}
               onClick={() => {

@@ -32,6 +32,7 @@ interface Reply {
   author: Author;
   content: string;
   timestamp: string;
+  id: string;
 }
 
 interface Post {
@@ -92,6 +93,7 @@ const replySchema = yup.object().shape({
   author: authorSchema.required("The author details are required"),
   content: yup.string().defined("The reply content is required"),
   timestamp: yup.string(),
+  id: yup.string(),
 });
 
 const postSchema = yup.object().shape({
@@ -119,15 +121,23 @@ const createErrorResponse = (
 ) => {
   return new Response(JSON.stringify({ message, additionalInformation }), {
     status,
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", ...corsHeaders },
   });
 };
 
-const createSuccessResponse = (responseData: any) => {
+const createSuccessResponse = (responseData: any, status: number = 200) => {
   return new Response(JSON.stringify(responseData), {
-    status: 200,
-    headers: { "Content-Type": "application/json" },
+    status,
+    headers: { "Content-Type": "application/json", ...corsHeaders },
   });
+};
+
+// temporarily allow my my requests to be served by any URL for testing against prod URL
+// Todo: change to final URL=
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Methods": "*",
+  "Access-Control-Allow-Headers": "*",
 };
 
 router.get("/posts", async (request) => {
@@ -231,7 +241,91 @@ router.post("/posts", async (request) => {
 
     posts.push(post);
     await posts_kv.put("posts", JSON.stringify(posts));
-    return new Response("", { status: 201 });
+    return createSuccessResponse(JSON.stringify(posts), 201);
+  } catch (err) {
+    console.log(err)
+    return createErrorResponse(
+      "Internal Server Error",
+      500,
+      "Post call for KV errored out, request limits hit"
+    );
+  }
+});
+
+router.post("/posts/:id/replies", async (request) => {
+  const { params } = request;
+  if (!params || !(params.id)) {
+    return createErrorResponse(
+      "Invalid parameter",
+      400,
+      "ID parameter was not sent with the request"
+    );
+  }
+  if (request.json === undefined) {
+    return createErrorResponse(
+      "Invalid Json",
+      400,
+      "JSON was not sent with the request"
+    );
+  }
+  let reply: Reply | null = null;
+
+  try {
+    reply = await request.json();
+  } catch {
+    return createErrorResponse(
+      "Invalid Json",
+      400,
+      "Request JSON is empty - JSON has an invalid structure"
+    );
+  }
+  try {
+    await replySchema.validate(reply);
+  } catch (err: unknown) {
+    if (isValidationError(err)) {
+      return createErrorResponse(
+        "Invalid Json",
+        400,
+        `Schema error: ${err.errors[0]}`
+      );
+    } else {
+      console.log({ err });
+      return createErrorResponse(
+        "Invalid Json",
+        400,
+        "Request json is invalid - JSON has an invalid structure"
+      );
+    }
+  }
+  if (reply === null) {
+    return createErrorResponse(
+      "Invalid Json",
+      400,
+      "JSON is null - JSON has an invalid structure"
+    );
+  }
+  try {
+    // set the timestamp of the post to now
+    reply.timestamp = Temporal.Now.instant().toString();
+    reply.id = uuidv4();
+    // replies are empty on first post
+
+
+    const stringPosts: string | null = await posts_kv.get("posts");
+    const posts: any[] = stringPosts ? JSON.parse(stringPosts) : [];
+
+    const post = posts.find(p => p.id === params.id);
+
+    if (post === undefined) {
+      return createErrorResponse('Invalid Post ID', 400, "The provided post id does not exsit");
+    }
+
+    // not happy with this, this is mutating and cofusing. 
+    // TODO: clean this up if possible
+    post.replies.push(reply);
+
+    await posts_kv.put("posts", JSON.stringify(posts));
+    return createSuccessResponse(JSON.stringify(post), 201);
   } catch (err) {
     console.log(err)
     return createErrorResponse(

@@ -6,13 +6,18 @@ import { Header } from './header';
 import { Post } from './post';
 import { SelectedPost } from './selected-post';
 import { useState } from '../state';
+import { usePosts } from '../utils/data-fetching';
+import { PostForm } from '../components/post-form';
 
 export const Feed = () => {
   const {
-    state: { posts, selectedPostId, hasNewPosts },
+    state: { selectedPostId, hasNewPosts },
     dispatch,
     actions,
   } = useState();
+
+  // should automatically get deduped request data
+  const { posts } = usePosts();
 
   const mainRef = useRef(null);
   useEffect(
@@ -62,6 +67,7 @@ export const Feed = () => {
           as="ul"
           sx={{ maxWidth: 600, marginX: 'auto', listStyleType: 'none' }}
         >
+          <PostForm />
           {posts.map((post) => (
             <motion.li
               layout
