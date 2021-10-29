@@ -7,17 +7,22 @@ import {
   Button,
   IconButton,
   Input,
+  Image,
 } from "@chakra-ui/react";
+import { useState } from "react";
 import { FiImage } from "react-icons/fi";
 import { useSWRConfig } from "swr";
 import { produce } from "immer";
-import { useState } from "../state.js";
+import { CloseIcon } from "./close-icon";
+import { useState as useAppState } from "../state.js";
 import { API_URL, POSTS_KEY } from "../utils/data-fetching";
 
 export const PostForm = () => {
   const {
     state: { user },
-  } = useState();
+  } = useAppState();
+
+  const [imageState, setImageState] = useState();
 
   const { mutate } = useSWRConfig();
 
@@ -105,13 +110,33 @@ export const PostForm = () => {
             size="lg"
           />
         </Box>
-        <HStack justify="space-between">
+        {imageState && (
           <Box>
+            <Image
+              src={URL.createObjectURL(imageState)}
+              sx={{
+                maxHeight: "40vh",
+                width: "100%",
+              }}
+              objectFit="cover"
+              borderRadius="sm"
+            />
+          </Box>
+        )}
+        <HStack justify="space-between">
+          <HStack spacing={2}>
             <Input
               accept="image/*"
               id="icon-button-file"
               type="file"
-              sx={{ display: "none" }}
+              sx={{ display: "none", position: "absolute" }}
+              onChange={(event) => {
+                if (event.target.files[0].size > 24 * 100000) {
+                  alert("The image is too big");
+                } else {
+                  setImageState(event.target.files[0]);
+                }
+              }}
             />
             <label htmlFor="icon-button-file">
               <IconButton
@@ -123,7 +148,15 @@ export const PostForm = () => {
                 aria-label="Upload an image"
               />
             </label>
-          </Box>
+            {imageState ? (
+              <IconButton
+                colorScheme="blue"
+                aria-label="REmove Image"
+                icon={<CloseIcon />}
+                onClick={() => setImageState(null)}
+              />
+            ) : null}
+          </HStack>
           <Button type="submit" colorScheme="teal" variant="solid">
             Post
           </Button>
