@@ -6,18 +6,19 @@ import { Header } from "./header";
 import { Post } from "./post";
 import { SelectedPost } from "./selected-post";
 import { useState } from "../state";
-import { usePosts } from "../utils/data-fetching";
+import { POSTS_KEY, usePosts } from "../utils/data-fetching";
 import { PostForm } from "../components/post-form";
+import { useSWRConfig } from "swr";
 
 export const Feed = () => {
   const {
     state: { selectedPostId, hasNewPosts },
-    dispatch,
-    actions,
+    actions, dispatch
   } = useState();
 
   // should automatically get deduped request data
   const { posts } = usePosts();
+  const { mutate } = useSWRConfig();
 
   const mainRef = useRef(null);
   useEffect(
@@ -57,7 +58,10 @@ export const Feed = () => {
             variant="link"
             colorScheme="teal"
             isFullWidth
-            onClick={() => dispatch({ type: actions.SHOW_NEW_POSTS })}
+            onClick={async () => {
+              await mutate(POSTS_KEY);
+              dispatch({ type: actions.REMOVE_SHOW_NEW_POSTS });
+            }}
             style={{ backgroundColor: "blues.100", paddingY: 5 }}
           >
             load more posts

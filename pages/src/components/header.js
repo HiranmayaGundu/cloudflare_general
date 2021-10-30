@@ -1,13 +1,10 @@
-import { useState } from "react";
-import { HStack, Image, Box, Text } from "@chakra-ui/react";
+import { HStack, Image, Box } from "@chakra-ui/react";
 import { useState as useAppState } from "../state";
 
 export const HEADER_HEIGHT = 68;
 
 export const Header = ({ isHome = false, scrollTop }) => {
   const { state, actions, dispatch } = useAppState();
-
-  const [showURL, setShowURL] = useState(false);
 
   return (
     <Box
@@ -43,18 +40,8 @@ export const Header = ({ isHome = false, scrollTop }) => {
             }, 750);
           }
         }}
-        onContextMenu={(event) => {
-          // lol secret trick to reveal url
-          event.preventDefault();
-          setShowURL((c) => !c);
-        }}
       >
         <Image width="200px" src="/logo.png" />
-        {showURL && (
-          <Text size={6} sx={{ fontStyle: "italic", lineHeight: 2 }}>
-            vercel.app
-          </Text>
-        )}
       </HStack>
     </Box>
   );

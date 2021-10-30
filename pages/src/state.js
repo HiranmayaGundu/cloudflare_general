@@ -1,5 +1,4 @@
 import React from "react";
-import { newPosts } from "./data";
 
 export const StateContext = React.createContext();
 
@@ -8,7 +7,7 @@ export const actions = {
   DESELECT_POST: "DESELECT_POST",
   ADD_COMMENT: "ADD_COMMENT",
   LOAD_NEW_POSTS: "LOAD_NEW_POSTS",
-  SHOW_NEW_POSTS: "SHOW_NEW_POSTS",
+  REMOVE_SHOW_NEW_POSTS: "SHOW_NEW_POSTS",
 };
 
 export const reducer = (state, action) => {
@@ -19,36 +18,13 @@ export const reducer = (state, action) => {
     case actions.DESELECT_POST: {
       return { ...state, selectedPostId: null, isPermalink: false };
     }
-    case actions.ADD_COMMENT: {
-      const { postId, reply } = action.payload;
-      return {
-        ...state,
-        posts: state.posts.map((post) => {
-          if (post.id === postId) {
-            return {
-              ...post,
-              replies: [
-                ...post.replies,
-                {
-                  author: state.user,
-                  body: reply,
-                  timestamp: new Date(),
-                },
-              ],
-            };
-          }
-          return post;
-        }),
-      };
-    }
     case actions.LOAD_NEW_POSTS: {
       return { ...state, hasNewPosts: true };
     }
-    case actions.SHOW_NEW_POSTS: {
+    case actions.REMOVE_SHOW_NEW_POSTS: {
       return {
         ...state,
         hasNewPosts: false,
-        posts: [...newPosts, ...state.posts],
       };
     }
     default:
