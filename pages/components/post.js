@@ -24,13 +24,13 @@ export const Post = ({ post, onSelect, isPermalink = false }) => {
   const rootProps = isPermalink
     ? { as: "div" }
     : {
-        as: "a",
-        href: "#",
-        onClick: () => {
-          onSelect();
-          dispatch({ type: actions.SELECT_POST, payload: { id: post.id } });
-        },
-      };
+      as: "a",
+      href: "#",
+      onClick: () => {
+        onSelect();
+        dispatch({ type: actions.SELECT_POST, payload: { id: post.id } });
+      },
+    };
 
   useEffect(() => {
     const handler = (event) => {

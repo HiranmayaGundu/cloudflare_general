@@ -46,7 +46,7 @@ interface Post {
   id?: string;
   replies: Reply[];
   // ideally should be HTML css type
-  style?: any
+  style?: any;
 }
 
 const imageEmbedSchema = yup.object().shape({
@@ -74,7 +74,7 @@ const embedValidation = yup.lazy((value) => {
         return linkEmbed;
       default:
         // TODO: yup.mixed is incorrect here, we should throw an error saying that this
-        //type of embed is unsupported. 
+        //type of embed is unsupported.
         return yup.mixed();
     }
   }
@@ -183,25 +183,74 @@ router.get("/posts", async (request) => {
   }
 });
 
-router.post("/posts", async (request) => {
-  if (request.json === undefined) {
-    console.log("not in here");
-    return createErrorResponse(
-      "Invalid Json",
-      400,
-      "JSON was not sent with the request"
-    );
-  }
-  let post: Post | null = null;
+const uploadImage = async (file: File) => {
+  console.log(file);
+  // @ts-ignore
+  const imageUUID = crypto.randomUUID();
+  const fileBuffer = await file.arrayBuffer();
+  await posts_kv.put(imageUUID, fileBuffer, { metadata: { type: file.type } });
+  return `https://worker.hiranmaya-assignment.workers.dev/images/${imageUUID}`;
+};
 
-  try {
-    post = await request.json();
-  } catch {
-    return createErrorResponse(
-      "Invalid Json",
-      400,
-      "Request JSON is empty - JSON has an invalid structure"
-    );
+router.post("/posts", async (request) => {
+  let post: Post | null = null;
+  //  @ts-ignore mdn clearly says the headers object exists
+  const contentTypeHeader = request.headers.get("Content-Type");
+  if (contentTypeHeader && contentTypeHeader.includes("multipart/form-data")) {
+    const formData = await request.formData?.();
+    let url;
+    try {
+      url = await uploadImage(formData.get("image"));
+    } catch (err) {
+      return createErrorResponse(
+        "Failed image uplaod",
+        500,
+        `ISE -Failed image upload ${err}`
+      );
+    }
+    if (!formData) {
+      return createErrorResponse(
+        "Invalid Form data",
+        400,
+        "Form data was not sent with the request"
+      );
+    }
+    post = {
+      username: formData.get("username"),
+      content: formData.get("content"),
+      title: formData.get("title"),
+      embed: {
+        type: "image",
+        image: url,
+      },
+      timestamp: Temporal.Now.instant().toString(),
+      author: {
+        username: formData.get("username"),
+        avatar: formData.get("avatar"),
+        name: formData.get("name"),
+      },
+      id: crypto.randomUUID(),
+      replies: [],
+    };
+  } else {
+    if (request.json === undefined) {
+      console.log("not in here");
+      return createErrorResponse(
+        "Invalid Json",
+        400,
+        "JSON was not sent with the request"
+      );
+    }
+
+    try {
+      post = await request.json();
+    } catch {
+      return createErrorResponse(
+        "Invalid Json",
+        400,
+        "Request JSON is empty - JSON has an invalid structure"
+      );
+    }
   }
   try {
     await postSchema.validate(post);
@@ -242,7 +291,7 @@ router.post("/posts", async (request) => {
     await posts_kv.put("posts", JSON.stringify(posts));
     return createSuccessResponse(JSON.stringify(post), 201);
   } catch (err) {
-    console.log(err)
+    console.log(err);
     return createErrorResponse(
       "Internal Server Error",
       500,
@@ -253,7 +302,7 @@ router.post("/posts", async (request) => {
 
 router.post("/posts/:id/replies", async (request) => {
   const { params } = request;
-  if (!params || !(params.id)) {
+  if (!params || !params.id) {
     return createErrorResponse(
       "Invalid parameter",
       400,
@@ -309,30 +358,63 @@ router.post("/posts/:id/replies", async (request) => {
     reply.id = crypto.randomUUID();
     // replies are empty on first post
 
-
     const stringPosts: string | null = await posts_kv.get("posts");
     const posts: any[] = stringPosts ? JSON.parse(stringPosts) : [];
 
-    const post = posts.find(p => p.id === params.id);
+    const post = posts.find((p) => p.id === params.id);
 
     if (post === undefined) {
-      return createErrorResponse('Invalid Post ID', 400, "The provided post id does not exsit");
+      return createErrorResponse(
+        "Invalid Post ID",
+        400,
+        "The provided post id does not exsit"
+      );
     }
 
-    // not happy with this, this is mutating and cofusing. 
+    // not happy with this, this is mutating and cofusing.
     // TODO: clean this up if possible
     post.replies.push(reply);
 
     await posts_kv.put("posts", JSON.stringify(posts));
     return createSuccessResponse(JSON.stringify(post), 201);
   } catch (err) {
-    console.log(err)
+    console.log(err);
     return createErrorResponse(
       "Internal Server Error",
       500,
       "Post call for KV errored out, request limits hit"
     );
   }
+});
+
+async function sha1(fileData: ArrayBuffer) {
+  const digest = await crypto.subtle.digest('SHA-1', fileData);
+  const array = Array.from(new Uint8Array(digest));
+  const sha1 = array.map(b => b.toString(16).padStart(2, '0')).join('')
+  return sha1;
+}
+
+router.get("/images/:id", async (request) => {
+  const { params } = request;
+
+  if (!params) {
+    return createErrorResponse("Bad request", 400, "Image id is required");
+  }
+
+  const imageWithMetada = await posts_kv.getWithMetadata(params.id, { type: 'arrayBuffer' });
+
+  const image = imageWithMetada.value;
+  let type;
+  if (imageWithMetada.metadata && (imageWithMetada.metadata as any).type) {
+    type = (imageWithMetada.metadata as any).type;
+  } else {
+    type = "image/jpeg";
+  }
+
+  return new Response(image, {
+    status: 200,
+    headers: { "Content-Type": type, ...corsHeaders },
+  });
 });
 
 router.all("*", () =>

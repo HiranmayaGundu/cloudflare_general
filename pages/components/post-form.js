@@ -9,7 +9,7 @@ import {
   Input,
   Image,
 } from "@chakra-ui/react";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { FiImage } from "react-icons/fi";
 import { useSWRConfig } from "swr";
 import { produce } from "immer";
@@ -23,6 +23,8 @@ export const PostForm = () => {
   } = useAppState();
 
   const [imageState, setImageState] = useState();
+  const [content, setContent] = useState();
+  const fileInputRef = useRef();
 
   const { mutate } = useSWRConfig();
 
@@ -50,25 +52,57 @@ export const PostForm = () => {
         onSubmit={async (event) => {
           event.preventDefault();
 
-          const content = event.target.newPost.value;
-          const data = {
-            username: user.username,
-            author: {
+          let dataToSend = null;
+          let dataToAppend = null;
+
+          if (imageState) {
+            dataToAppend = {
               username: user.username,
-              avatar: user.avatar,
-              name: user.name,
-            },
-            title: content,
-            content,
-            timestamp: new Date(),
-            replies: [],
-            id: "new-post-id",
-          };
+              author: {
+                username: user.username,
+                avatar: user.avatar,
+                name: user.name,
+              },
+              title: content,
+              content,
+              timestamp: new Date(),
+              replies: [],
+              id: "new-post-id",
+              embed: {
+                type: 'image',
+                image: URL.createObjectURL(imageState)
+              }
+            };
+            dataToSend = new FormData();
+            dataToSend.append("username", user.username);
+            dataToSend.append("avatar", user.avatar);
+            dataToSend.append("name", user.name);
+            dataToSend.append("title", content);
+            dataToSend.append("content", content);
+            dataToSend.append("timestamp", new Date());
+            dataToSend.append("image", imageState);
+          }
+          else {
+            dataToAppend = {
+              username: user.username,
+              author: {
+                username: user.username,
+                avatar: user.avatar,
+                name: user.name,
+              },
+              title: content,
+              content,
+              timestamp: new Date(),
+              replies: [],
+              id: "new-post-id",
+            };
+            dataToSend = JSON.stringify(dataToAppend);
+          }
 
           mutate(
             POSTS_KEY,
             produce((posts) => {
-              posts.unshift(data);
+              posts.unshift(dataToAppend);
             }),
             false
           );
@@ -77,7 +111,7 @@ export const PostForm = () => {
             try {
               const result = await fetch(`${API_URL}posts`, {
                 method: "POST",
-                body: JSON.stringify(data),
+                body: dataToSend,
               });
 
               const updatedPost = JSON.parse(await result.json());
@@ -91,6 +125,9 @@ export const PostForm = () => {
               throw err;
             }
           });
+          setContent('');
+          setImageState(null);
+          fileInputRef.current.value = '';
         }}
       >
         <HStack justify="space-between" sx={{ width: "100%" }}>
@@ -108,6 +145,8 @@ export const PostForm = () => {
             placeholder={`What's on your mind?`}
             autoComplete="off"
             size="lg"
+            value={content}
+            onChange={(e) => setContent(e.target.value)}
           />
         </Box>
         {imageState && (
@@ -126,6 +165,7 @@ export const PostForm = () => {
         <HStack justify="space-between">
           <HStack spacing={2}>
             <Input
+              ref={fileInputRef}
               accept="image/*"
               id="icon-button-file"
               type="file"
@@ -150,10 +190,13 @@ export const PostForm = () => {
             </label>
             {imageState ? (
               <IconButton
-                colorScheme="blue"
-                aria-label="REmove Image"
+                colorScheme="red"
+                aria-label="Remove Image"
                 icon={<CloseIcon />}
-                onClick={() => setImageState(null)}
+                onClick={() => {
+                  setImageState(null);
+                  fileInputRef.current.value = '';
+                }}
               />
             ) : null}
           </HStack>

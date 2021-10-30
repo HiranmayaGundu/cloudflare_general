@@ -5,6 +5,7 @@ account_id = ""
 route = ""
 workers_dev = true
 compatibility_date = "2021-10-19"
+compatibility_flags = [ "formdata_parser_supports_files" ]
 kv_namespaces = [ 
          { binding = "posts_kv",  preview_id = "704039c1e70440999c06be2d7db66fdb", id = "6f3ba043445248418522b8aa303491d0" }
 ]
