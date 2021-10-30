@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { HEADER_HEIGHT } from "./header";
 import { Post } from "./post";
 import { Replies } from "./replies";
@@ -7,8 +7,6 @@ import { useState as useAppState } from "../state";
 import { usePosts } from "../utils/data-fetching";
 
 export const SelectedPost = () => {
-  if (typeof document === "undefined") return null;
-
   const {
     state: { newPosts, selectedPostId, isPermalink },
     actions,
@@ -40,7 +38,7 @@ export const SelectedPost = () => {
   return (
     <AnimatePresence
       initial={isPermalink ? false : true}
-      onExitComplete={() => history.pushState(null, null, "/")}
+      onExitComplete={() => window.history.pushState(null, null, "/")}
     >
       {selectedPostId && (
         <section

@@ -23,7 +23,7 @@ export const Feed = () => {
   useEffect(
     function scrollBack() {
       if (mainRef.current && !selectedPostId) {
-        mainRef.current.scrollTo({ top: history.state?.scrollPosition });
+        mainRef.current.scrollTo({ top: window.history.state?.scrollPosition });
       }
     },
     [selectedPostId]
@@ -81,7 +81,7 @@ export const Feed = () => {
               <Post
                 post={post}
                 onSelect={() => {
-                  history.pushState(
+                  window.history.pushState(
                     { scrollPosition: mainRef.current.scrollTop },
                     null,
                     "/post/" + post.id
