@@ -163,7 +163,7 @@ const doAuth = async (post: Post, cookie: string | null): Promise<string> => {
           );
           throw new AuthError("JWT is invalid");
         }
-        setCookieString = `${cookie}; Domain=${TUNNEL_URL}; HttpOnly; Secure; Path=/`;
+        setCookieString = `${cookie}; HttpOnly; Secure; Path=/`;
       } else {
         throw new AuthError("JWT is invalid");
       }
@@ -177,7 +177,7 @@ const doAuth = async (post: Post, cookie: string | null): Promise<string> => {
       if (!setCookieHeader) {
         throw new AuthError("No cookie for auth");
       }
-      setCookieString = `${setCookieHeader}; Domain=${TUNNEL_URL}`;
+      setCookieString = setCookieHeader;
       console.log("the auth returned correctly for: ", setCookieString);
       users.push(user_in_post);
       await posts_kv.put("users", JSON.stringify(users));
