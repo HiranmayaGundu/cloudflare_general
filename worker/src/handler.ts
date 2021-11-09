@@ -1,6 +1,5 @@
 import { Router } from "itty-router";
 import type { Request as IttyRequest } from "itty-router";
-import * as yup from "yup";
 import { Temporal } from "@js-temporal/polyfill";
 // import extension of date
 import "./extensions";
@@ -9,55 +8,22 @@ import {
   ImageUploadError,
   InvalidJsonError,
   AuthError,
-} from "./Error";
+} from "./error";
 import { Post, Reply } from "./main-types";
 import { postSchema, replySchema } from "./yup-schema";
+import {
+  createErrorResponse,
+  createSuccessResponse,
+  isValidationError,
+  corsHeaders,
+} from "./utils";
+
+const TUNNEL_URL = "https://sc-unnecessary-bm-resumes.trycloudflare.com";
+
+const DEFAULT_AVATAR =
+  "https://abs.twimg.com/sticky/default_profile_images/default_profile_200x200.png";
 
 const router = Router();
-
-const isValidationError = (err: any): err is yup.ValidationError => {
-  return err && err.name && err.name === "ValidationError";
-};
-
-// temporarily allow my my requests to be served by any URL for testing against prod URL
-// Todo: change to final URL=
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Methods": "*",
-  "Access-Control-Allow-Headers": "*",
-};
-
-const createErrorResponse = (
-  message: string,
-  status: number,
-  additionalInformation?: string
-) => {
-  return new Response(
-    JSON.stringify({ message, additionalInformation }, null, 2),
-    {
-      status,
-      headers: {
-        "content-type": "application/json;charset=UTF-8",
-        ...corsHeaders,
-      },
-    }
-  );
-};
-
-const createSuccessResponse = (
-  responseData: any,
-  status = 200,
-  headers: Record<string, string> = {}
-) => {
-  return new Response(JSON.stringify(responseData, null, 2), {
-    status,
-    headers: {
-      "content-type": "application/json;charset=UTF-8",
-      ...corsHeaders,
-      ...headers,
-    },
-  });
-};
 
 router.get("/posts", async (request) => {
   const limitString: string | null = request.query?.number || null;
@@ -109,9 +75,6 @@ const uploadImage = async (file: File) => {
   await posts_kv.put(imageUUID, fileBuffer, { metadata: { type: file.type } });
   return `https://worker.hiranmaya-assignment.workers.dev/images/${imageUUID}`;
 };
-
-const DEFAULT_AVATAR =
-  "https://abs.twimg.com/sticky/default_profile_images/default_profile_200x200.png";
 
 const getPostFromFormData = async (formData: FormData): Promise<Post> => {
   if (!formData) {
@@ -174,12 +137,7 @@ const getPostFromJsonRequest = async (request: IttyRequest): Promise<Post> => {
   return post;
 };
 
-const TUNNEL_URL = "https://sc-unnecessary-bm-resumes.trycloudflare.com";
-
-const doAuthorisation = async (
-  post: Post,
-  cookie: string | null
-): Promise<string> => {
+const doAuth = async (post: Post, cookie: string | null): Promise<string> => {
   const users = await getUsers();
   const user_in_post = post.username;
   const found_user = users.find((user) => user === user_in_post);
@@ -200,9 +158,12 @@ const doAuthorisation = async (
         const username_in_jwt = await res.text();
         console.log("the verify returned correctly for: ", username_in_jwt);
         if (username_in_jwt !== user_in_post) {
+          console.log(
+            `the verify returned a different user ${username_in_jwt} and ${user_in_post}`
+          );
           throw new AuthError("JWT is invalid");
         }
-        setCookieString = `${cookie}; HttpOnly; Secure; Path=/;`;
+        setCookieString = `${cookie}; Domain=${TUNNEL_URL}; HttpOnly; Secure; Path=/`;
       } else {
         throw new AuthError("JWT is invalid");
       }
@@ -216,7 +177,7 @@ const doAuthorisation = async (
       if (!setCookieHeader) {
         throw new AuthError("No cookie for auth");
       }
-      setCookieString = setCookieHeader;
+      setCookieString = `${setCookieHeader}; Domain=${TUNNEL_URL}`;
       console.log("the auth returned correctly for: ", setCookieString);
       users.push(user_in_post);
       await posts_kv.put("users", JSON.stringify(users));
@@ -263,7 +224,7 @@ router.post("/posts", async (request) => {
   console.log("The cookie initially is: ", cookie);
   let setCookieString: string;
   try {
-    setCookieString = await doAuthorisation(post, cookie);
+    setCookieString = await doAuth(post, cookie);
   } catch (err) {
     if (err instanceof AuthError) {
       return createErrorResponse("Unauthorised", 401, err.message);
@@ -312,11 +273,13 @@ router.post("/posts", async (request) => {
     post.replies = [];
 
     const stringPosts: string | null = await posts_kv.get("posts");
-    const posts: any[] = stringPosts ? JSON.parse(stringPosts) : [];
+    const posts: Post[] = stringPosts ? JSON.parse(stringPosts) : [];
 
     posts.unshift(post);
     await posts_kv.put("posts", JSON.stringify(posts));
-    console.log("Successfully created a post");
+    console.log(
+      `Successfully created a post, returning cookie string ${setCookieString}`
+    );
     const response = createSuccessResponse(JSON.stringify(post), 201, {
       "Set-Cookie": setCookieString,
     });
@@ -398,7 +361,7 @@ router.post("/posts/:id/replies", async (request) => {
       return createErrorResponse(
         "Invalid Post ID",
         400,
-        "The provided post id does not exsit"
+        "The provided post id does not exist"
       );
     }
 
