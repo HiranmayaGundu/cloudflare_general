@@ -8,7 +8,7 @@ import { usePosts } from "../utils/data-fetching";
 
 export const SelectedPost = () => {
   const {
-    state: { newPosts, selectedPostId, isPermalink },
+    state: { selectedPostId, isPermalink },
     actions,
     dispatch,
   } = useAppState();
@@ -20,11 +20,6 @@ export const SelectedPost = () => {
 
   if (selectedPostId) {
     selectedPost = posts.find((post) => post.id === selectedPostId);
-  }
-
-  // hack for post page: new posts are inserted later :)
-  if (!selectedPost) {
-    selectedPost = newPosts.find((post) => post.id === selectedPostId);
   }
 
   const postElement = document.querySelector(`[data-id="${selectedPostId}"]`);

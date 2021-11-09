@@ -1,11 +1,10 @@
 import { useReducer } from "react";
 import { StateContext, reducer, actions } from "../state";
-import { user, newPosts } from "../data";
+import { user } from "../data";
 
 export const App = ({ initialPostId = null, children }) => {
   const initialState = {
     user,
-    newPosts,
     selectedPostId: initialPostId,
     isPermalink: initialPostId,
     hasNewPosts: false,
