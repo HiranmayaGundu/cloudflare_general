@@ -1,134 +1,22 @@
 import { Router } from "itty-router";
+import type { Request as IttyRequest } from "itty-router";
 import * as yup from "yup";
 import { Temporal } from "@js-temporal/polyfill";
 // import extension of date
 import "./extensions";
+import {
+  FormDataError,
+  ImageUploadError,
+  InvalidJsonError,
+  AuthError,
+} from "./Error";
+import { Post, Reply } from "./main-types";
+import { postSchema, replySchema } from "./yup-schema";
 
 const router = Router();
 
-interface ImageEmbed {
-  type: "image";
-  image: string;
-}
-
-interface LinkEmbed {
-  type: "link";
-  title: string;
-  image?: string;
-  link: {
-    title: string;
-    href: string;
-  };
-}
-
-interface Author {
-  name: string;
-  username: string;
-  avatar?: string;
-}
-
-interface Reply {
-  author: Author;
-  content: string;
-  timestamp: string;
-  id: string;
-}
-
-interface Post {
-  username: string;
-  content: string;
-  title: string;
-  embed?: LinkEmbed | ImageEmbed;
-  timestamp?: string;
-  author: Author;
-  // ideally should be non null, but then I would have to start
-  // creating different types for incoming and outgoing data.
-  id?: string;
-  replies: Reply[];
-  // ideally should be HTML css type
-  style?: any;
-}
-
-const imageEmbedSchema = yup.object().shape({
-  type: yup.string().oneOf(["image"]),
-  image: yup.string().defined("The image URL is required"),
-});
-
-const linkEmbed = yup.object().shape({
-  type: yup.string().oneOf(["link"]),
-  title: yup.string().defined(),
-  image: yup.string(),
-  link: yup.object().shape({
-    title: yup.string().defined(),
-    href: yup.string().defined(),
-  }),
-});
-
-const embedValidation = yup.lazy((value) => {
-  if (value) {
-    const { type } = value;
-    switch (type) {
-      case "image":
-        return imageEmbedSchema;
-      case "link":
-        return linkEmbed;
-      default:
-        // TODO: yup.mixed is incorrect here, we should throw an error saying that this
-        //type of embed is unsupported.
-        return yup.mixed();
-    }
-  }
-  // case when there is no embed
-  return yup.mixed();
-});
-
-const authorSchema = yup.object().shape({
-  name: yup.string().defined("The name is required"),
-  username: yup.string().defined("The username is required"),
-  avatar: yup.string(),
-});
-
-const replySchema = yup.object().shape({
-  author: authorSchema.required("The author details are required"),
-  content: yup.string().defined("The reply content is required"),
-  timestamp: yup.string(),
-  id: yup.string(),
-});
-
-const postSchema = yup.object().shape({
-  username: yup.string().defined("The username is required"),
-  content: yup.string().defined("The content is required"),
-  title: yup.string().defined("The title is required"),
-  // not marking this as required since the date object that is
-  // coming for a post call is thrown away anyway.
-  id: yup.string(),
-  timestamp: yup.date(),
-  embed: embedValidation,
-  author: authorSchema.required("The author details are required"),
-  replies: yup.array(replySchema),
-  style: yup.mixed(),
-});
-
 const isValidationError = (err: any): err is yup.ValidationError => {
   return err && err.name && err.name === "ValidationError";
-};
-
-const createErrorResponse = (
-  message: string,
-  status: number,
-  additionalInformation?: string
-) => {
-  return new Response(JSON.stringify({ message, additionalInformation }), {
-    status,
-    headers: { "Content-Type": "application/json", ...corsHeaders },
-  });
-};
-
-const createSuccessResponse = (responseData: any, status: number = 200) => {
-  return new Response(JSON.stringify(responseData), {
-    status,
-    headers: { "Content-Type": "application/json", ...corsHeaders },
-  });
 };
 
 // temporarily allow my my requests to be served by any URL for testing against prod URL
@@ -137,6 +25,38 @@ const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "*",
   "Access-Control-Allow-Headers": "*",
+};
+
+const createErrorResponse = (
+  message: string,
+  status: number,
+  additionalInformation?: string
+) => {
+  return new Response(
+    JSON.stringify({ message, additionalInformation }, null, 2),
+    {
+      status,
+      headers: {
+        "content-type": "application/json;charset=UTF-8",
+        ...corsHeaders,
+      },
+    }
+  );
+};
+
+const createSuccessResponse = (
+  responseData: any,
+  status = 200,
+  headers: Record<string, string> = {}
+) => {
+  return new Response(JSON.stringify(responseData, null, 2), {
+    status,
+    headers: {
+      "content-type": "application/json;charset=UTF-8",
+      ...corsHeaders,
+      ...headers,
+    },
+  });
 };
 
 router.get("/posts", async (request) => {
@@ -184,75 +104,184 @@ router.get("/posts", async (request) => {
 });
 
 const uploadImage = async (file: File) => {
-  console.log(file);
-  // @ts-ignore
   const imageUUID = crypto.randomUUID();
   const fileBuffer = await file.arrayBuffer();
   await posts_kv.put(imageUUID, fileBuffer, { metadata: { type: file.type } });
   return `https://worker.hiranmaya-assignment.workers.dev/images/${imageUUID}`;
 };
 
+const DEFAULT_AVATAR =
+  "https://abs.twimg.com/sticky/default_profile_images/default_profile_200x200.png";
+
+const getPostFromFormData = async (formData: FormData): Promise<Post> => {
+  if (!formData) {
+    throw new FormDataError("Form data is empty");
+  }
+  let url;
+  try {
+    url = await uploadImage(formData.get("image") as File);
+  } catch (err) {
+    throw new ImageUploadError(`Image upload failed ${err}`);
+  }
+  const post: Post = {
+    username: formData.get("username") as string,
+    content: formData.get("content") as string,
+    title: formData.get("title") as string,
+    embed: {
+      type: "image",
+      image: url,
+    },
+    timestamp: Temporal.Now.instant().toString(),
+    author: {
+      username: formData.get("username") as string,
+      avatar: (formData.get("avatar") as string) || DEFAULT_AVATAR,
+      name:
+        (formData.get("name") as string) ||
+        (formData.get("username") as string),
+    },
+    id: crypto.randomUUID(),
+    replies: [],
+  };
+  return post;
+};
+
+const getUsers = async (): Promise<string[]> => {
+  const users_string: string | null = await posts_kv.get("users");
+  let users: string[];
+  if (!users_string) {
+    users = [];
+  } else {
+    users = JSON.parse(users_string);
+  }
+  return users;
+};
+
+const getPostFromJsonRequest = async (request: IttyRequest): Promise<Post> => {
+  if (request.json === undefined) {
+    throw new InvalidJsonError("JSON was not sent with the request");
+  }
+  let post: Post;
+  try {
+    post = await request.json();
+  } catch {
+    throw new InvalidJsonError(
+      "Request JSON is empty - JSON has an invalid structure"
+    );
+  }
+  if (post === null) {
+    throw new InvalidJsonError("JSON is null - JSON has an invalid structure");
+  }
+  return post;
+};
+
+const TUNNEL_URL = "https://sc-unnecessary-bm-resumes.trycloudflare.com";
+
+const doAuthorisation = async (
+  post: Post,
+  cookie: string | null
+): Promise<string> => {
+  const users = await getUsers();
+  const user_in_post = post.username;
+  const found_user = users.find((user) => user === user_in_post);
+  let setCookieString: string;
+  if (found_user) {
+    console.log("found user", found_user);
+    if (cookie) {
+      console.log("Making the verify call for cookie", cookie);
+      const res = await fetch(`${TUNNEL_URL}/verify`, {
+        headers: {
+          Cookie: cookie,
+        },
+      });
+      console.log(
+        `Result of the verify call: ${res.status} with ok: ${res.ok}`
+      );
+      if (res.ok) {
+        const username_in_jwt = await res.text();
+        console.log("the verify returned correctly for: ", username_in_jwt);
+        if (username_in_jwt !== user_in_post) {
+          throw new AuthError("JWT is invalid");
+        }
+        setCookieString = `${cookie}; HttpOnly; Secure; Path=/;`;
+      } else {
+        throw new AuthError("JWT is invalid");
+      }
+    } else {
+      throw new AuthError("No cookie for auth");
+    }
+  } else {
+    const res = await fetch(`${TUNNEL_URL}/auth/${user_in_post}`);
+    if (res.ok) {
+      const setCookieHeader = res.headers.get("Set-Cookie");
+      if (!setCookieHeader) {
+        throw new AuthError("No cookie for auth");
+      }
+      setCookieString = setCookieHeader;
+      console.log("the auth returned correctly for: ", setCookieString);
+      users.push(user_in_post);
+      await posts_kv.put("users", JSON.stringify(users));
+    } else {
+      throw new AuthError("Unable to generate JWT for user");
+    }
+  }
+  return setCookieString;
+};
+
 router.post("/posts", async (request) => {
   let post: Post | null = null;
-  //  @ts-ignore mdn clearly says the headers object exists
+  // @ts-expect-error headers
+  console.log("The request headers are: ", request.headers);
+  //  @ts-expect-error mdn clearly says the headers object exists
   const contentTypeHeader = request.headers.get("Content-Type");
   if (contentTypeHeader && contentTypeHeader.includes("multipart/form-data")) {
-    const formData = await request.formData?.();
-    let url;
     try {
-      url = await uploadImage(formData.get("image"));
+      const formData = await request.formData?.();
+      post = await getPostFromFormData(formData);
     } catch (err) {
-      return createErrorResponse(
-        "Failed image uplaod",
-        500,
-        `ISE -Failed image upload ${err}`
-      );
+      if (err instanceof ImageUploadError) {
+        return createErrorResponse("Image upload failed", 500, err.message);
+      } else if (err instanceof FormDataError) {
+        return createErrorResponse("Form data is invalid", 400, err.message);
+      } else {
+        return createErrorResponse("Internal Server Error", 500, `${err}`);
+      }
     }
-    if (!formData) {
-      return createErrorResponse(
-        "Invalid Form data",
-        400,
-        "Form data was not sent with the request"
-      );
-    }
-    post = {
-      username: formData.get("username"),
-      content: formData.get("content"),
-      title: formData.get("title"),
-      embed: {
-        type: "image",
-        image: url,
-      },
-      timestamp: Temporal.Now.instant().toString(),
-      author: {
-        username: formData.get("username"),
-        avatar: formData.get("avatar"),
-        name: formData.get("name"),
-      },
-      id: crypto.randomUUID(),
-      replies: [],
-    };
   } else {
-    if (request.json === undefined) {
-      console.log("not in here");
-      return createErrorResponse(
-        "Invalid Json",
-        400,
-        "JSON was not sent with the request"
-      );
-    }
-
     try {
-      post = await request.json();
-    } catch {
-      return createErrorResponse(
-        "Invalid Json",
-        400,
-        "Request JSON is empty - JSON has an invalid structure"
-      );
+      post = await getPostFromJsonRequest(request);
+    } catch (err: unknown) {
+      if (err instanceof InvalidJsonError) {
+        return createErrorResponse("Invalid JSON", 400, err.message);
+      } else {
+        return createErrorResponse("Internal Server Error", 500, `${err}`);
+      }
+    }
+  }
+
+  // @ts-expect-error the headers object is defined
+  const cookie: string | null = request.headers.get("Cookie");
+  console.log("The cookie initially is: ", cookie);
+  let setCookieString: string;
+  try {
+    setCookieString = await doAuthorisation(post, cookie);
+  } catch (err) {
+    if (err instanceof AuthError) {
+      return createErrorResponse("Unauthorised", 401, err.message);
+    } else {
+      return createErrorResponse("Internal Server Error", 500, `${err}`);
     }
   }
   try {
+    if (!post.author) {
+      post.author = {
+        username: post.username,
+        avatar: DEFAULT_AVATAR,
+        name: post.username,
+      };
+    }
+    if (!post.title) {
+      post.title = post.content;
+    }
     await postSchema.validate(post);
   } catch (err: unknown) {
     if (isValidationError(err)) {
@@ -270,13 +299,11 @@ router.post("/posts", async (request) => {
       );
     }
   }
-  if (post === null) {
-    return createErrorResponse(
-      "Invalid Json",
-      400,
-      "JSON is null - JSON has an invalid structure"
-    );
+
+  if (!setCookieString) {
+    return createErrorResponse("Invalid JWT", 401, "JWT is invalid");
   }
+
   try {
     // set the timestamp of the post to now
     post.timestamp = Temporal.Now.instant().toString();
@@ -289,7 +316,11 @@ router.post("/posts", async (request) => {
 
     posts.unshift(post);
     await posts_kv.put("posts", JSON.stringify(posts));
-    return createSuccessResponse(JSON.stringify(post), 201);
+    console.log("Successfully created a post");
+    const response = createSuccessResponse(JSON.stringify(post), 201, {
+      "Set-Cookie": setCookieString,
+    });
+    return response;
   } catch (err) {
     console.log(err);
     return createErrorResponse(
@@ -387,13 +418,6 @@ router.post("/posts/:id/replies", async (request) => {
   }
 });
 
-async function sha1(fileData: ArrayBuffer) {
-  const digest = await crypto.subtle.digest('SHA-1', fileData);
-  const array = Array.from(new Uint8Array(digest));
-  const sha1 = array.map(b => b.toString(16).padStart(2, '0')).join('')
-  return sha1;
-}
-
 router.get("/images/:id", async (request) => {
   const { params } = request;
 
@@ -401,7 +425,9 @@ router.get("/images/:id", async (request) => {
     return createErrorResponse("Bad request", 400, "Image id is required");
   }
 
-  const imageWithMetada = await posts_kv.getWithMetadata(params.id, { type: 'arrayBuffer' });
+  const imageWithMetada = await posts_kv.getWithMetadata(params.id, {
+    type: "arrayBuffer",
+  });
 
   const image = imageWithMetada.value;
   let type;
