@@ -23,6 +23,9 @@ const TUNNEL_URL = "https://sc-unnecessary-bm-resumes.trycloudflare.com";
 const DEFAULT_AVATAR =
   "https://abs.twimg.com/sticky/default_profile_images/default_profile_200x200.png";
 
+const USERS_KV_KEY = "users";
+const POSTS_KV_KEY = "posts";
+
 const router = Router();
 
 router.get("/posts", async (request) => {
@@ -43,13 +46,13 @@ router.get("/posts", async (request) => {
   }
 
   try {
-    const posts: string | null = await posts_kv.get("posts");
+    const posts: string | null = await posts_kv.get(POSTS_KV_KEY);
     let postList: Post[] = [];
     let responsePostList: Post[] = [];
     if (!posts) {
       // first time we get, if it is null we have never entered data.
       // enter empty array into cache at that point.
-      await posts_kv.put("posts", JSON.stringify([]));
+      await posts_kv.put(POSTS_KV_KEY, JSON.stringify([]));
       postList = [];
     } else {
       postList = JSON.parse(posts);
@@ -109,7 +112,7 @@ const getPostFromFormData = async (formData: FormData): Promise<Post> => {
 };
 
 const getUsers = async (): Promise<string[]> => {
-  const users_string: string | null = await posts_kv.get("users");
+  const users_string: string | null = await posts_kv.get(USERS_KV_KEY);
   let users: string[];
   if (!users_string) {
     users = [];
@@ -180,7 +183,7 @@ const doAuth = async (post: Post, cookie: string | null): Promise<string> => {
       setCookieString = setCookieHeader;
       console.log("the auth returned correctly for: ", setCookieString);
       users.push(user_in_post);
-      await posts_kv.put("users", JSON.stringify(users));
+      await posts_kv.put(USERS_KV_KEY, JSON.stringify(users));
     } else {
       throw new AuthError("Unable to generate JWT for user");
     }
@@ -227,7 +230,7 @@ router.post("/posts", async (request) => {
     setCookieString = await doAuth(post, cookie);
   } catch (err) {
     if (err instanceof AuthError) {
-      return createErrorResponse("Unauthorised", 401, err.message);
+      return createErrorResponse("Unauthorized", 401, err.message);
     } else {
       return createErrorResponse("Internal Server Error", 500, `${err}`);
     }
@@ -272,11 +275,11 @@ router.post("/posts", async (request) => {
     // replies are empty on first post
     post.replies = [];
 
-    const stringPosts: string | null = await posts_kv.get("posts");
+    const stringPosts: string | null = await posts_kv.get(POSTS_KV_KEY);
     const posts: Post[] = stringPosts ? JSON.parse(stringPosts) : [];
 
     posts.unshift(post);
-    await posts_kv.put("posts", JSON.stringify(posts));
+    await posts_kv.put(POSTS_KV_KEY, JSON.stringify(posts));
     console.log(
       `Successfully created a post, returning cookie string ${setCookieString}`
     );
@@ -352,8 +355,8 @@ router.post("/posts/:id/replies", async (request) => {
     reply.id = crypto.randomUUID();
     // replies are empty on first post
 
-    const stringPosts: string | null = await posts_kv.get("posts");
-    const posts: any[] = stringPosts ? JSON.parse(stringPosts) : [];
+    const stringPosts: string | null = await posts_kv.get(POSTS_KV_KEY);
+    const posts: Post[] = stringPosts ? JSON.parse(stringPosts) : [];
 
     const post = posts.find((p) => p.id === params.id);
 
@@ -365,11 +368,11 @@ router.post("/posts/:id/replies", async (request) => {
       );
     }
 
-    // not happy with this, this is mutating and cofusing.
+    // not happy with this, this is mutating and confusing.
     // TODO: clean this up if possible
     post.replies.push(reply);
 
-    await posts_kv.put("posts", JSON.stringify(posts));
+    await posts_kv.put(POSTS_KV_KEY, JSON.stringify(posts));
     return createSuccessResponse(JSON.stringify(post), 201);
   } catch (err) {
     console.log(err);

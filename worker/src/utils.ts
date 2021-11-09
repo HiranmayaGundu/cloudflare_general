@@ -22,7 +22,7 @@ export const createErrorResponse = (
     {
       status,
       headers: {
-        "content-type": "application/json;charset=UTF-8",
+        "Content-Type": "application/json;charset=UTF-8",
         ...corsHeaders,
       },
     }
@@ -37,7 +37,7 @@ export const createSuccessResponse = (
   return new Response(JSON.stringify(responseData, null, 2), {
     status,
     headers: {
-      "content-type": "application/json;charset=UTF-8",
+      "Content-Type": "application/json;charset=UTF-8",
       ...corsHeaders,
       ...headers,
     },
